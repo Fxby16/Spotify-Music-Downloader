@@ -12,6 +12,7 @@ REQUIREMENTS:
 -put the client id and the client secret in "spotifydownloader.py" (lines 11-12)  
   
 GENERAL INFO:  
+-the program supports playlists, albums and single tracks  
 -the program downloads the music from youtube in mp4, then convert it to mp3 and delete all mp4 files  
 -to use it just run it and put what needed  
 -that's my first python program so all advices are accepted  
