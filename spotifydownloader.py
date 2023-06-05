@@ -1,22 +1,17 @@
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from youtube_search import YoutubeSearch
-from pytube import YouTube
-import os
-import moviepy
-import glob
-import moviepy.editor
 import sys
+import yt_dlp
+
 
 CLIENT_ID = 'YOUR ID'
-CLIENT_SECRET = "YOUR SECRET"
-PLAYLIST_LINK = input("Insert Playlist/Album/Track link to continue or 0 to ESC: ")
+CLIENT_SECRET = 'YOUR SECRET'
+PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
 if PLAYLIST_LINK == '0':
     sys.exit()
 
-CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(
-    client_id=CLIENT_ID, client_secret=CLIENT_SECRET
-)
+CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
 SP = spotipy.Spotify(client_credentials_manager=CLIENT_CREDENTIALS_MANAGER)
 
 
@@ -36,73 +31,60 @@ def playlist():
         tracks.extend(results['items'])
 
     for track in tracks:
-        song = (track['track']['name'] + ' - ' + track["track"]["artists"][0]["name"])
+        song = (track['track']['name'] + ' - ' + track['track']['artists'][0]['name'])
         resultss = YoutubeSearch(song, max_results = 1).to_dict()
 
         for v in resultss:
             url = ('https://www.youtube.com' + v['url_suffix'])
 
-        download(url,folder)
-        print("Download of " + song + " completed")
-
-    converter(folder)
+        download(url,folder,song)
+        print('Download of ' + song + ' completed')
 
     return folder
 
 def album():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
-    folder = input("Destination folder: ")
+    folder = input('Destination folder: ')
     tracks = SP.album_tracks(playlist_uri)
     for track in tracks['items']:
-        song = (track['name'] + ' - ' + track["artists"][0]["name"])
+        song = (track['name'] + ' - ' + track['artists'][0]['name'])
         resultss = YoutubeSearch(song, max_results = 1).to_dict()
         for v in resultss:
             url = ('https://www.youtube.com' + v['url_suffix'])
-        download(url,folder)
-        print("Download of " + song + " completed")
-
-    converter(folder)
+        download(url,folder,song)
+        print('Download of ' + song + ' completed')
 
     return folder
 
 def song():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
-    folder = input("Destination folder: ")
+    folder = input('Destination folder: ')
 
     results = SP.track(playlist_uri)
-    song = (results['name'] + ' - ' + results["artists"][0]["name"])
+    song = (results['name'] + ' - ' + results['artists'][0]['name'])
     resultss = YoutubeSearch(song, max_results = 1).to_dict()
     for v in resultss:
         url = ('https://www.youtube.com' + v['url_suffix'])
-    download(url,folder)
-    print("Download of " + song + " completed")
-
-    converter(folder)
+    download(url,folder,song)
+    print('Download of ' + song + ' completed')
 
     return folder
 
+def download(link,folder,song):
 
-def converter(folder):
-    mp4_filenames_list = glob.glob(os.path.join(folder, "*.mp4"))
+    ydl_opts = {
+    'format': 'bestaudio/best',
+    'outtmpl': f'{folder}/{song}.%(ext)s',
+    'quiet': True,
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192'
+    }],
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as yt:
+        yt.download([link])
 
-    for filename in mp4_filenames_list:
-        video = moviepy.editor.VideoFileClip(filename)
-        audio = video.audio
-
-        if audio is not None:
-            mp3_file_name = filename.replace('.mp4', '.mp3')
-            audio.write_audiofile(mp3_file_name)
-
-        video.close()
-
-        os.unlink(filename)
-
-
-
-def download(link,folder):
-
-    yt = YouTube(link)
-    video = yt.streams.filter(file_extension='mp4').order_by('abr').desc().first().download(folder)
 
 
 def main():
