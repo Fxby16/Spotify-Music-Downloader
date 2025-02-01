@@ -3,9 +3,6 @@
 ## Description
 Spotify Music Downloader allows you to download tracks, albums, and playlists from Spotify by fetching the corresponding YouTube links and downloading the audio.
 
-## Last Update
-01/02/2025
-
 ## Requirements
 - `spotipy`
 - `yt_dlp`
@@ -28,7 +25,13 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
     python3 spotifydownloader.py
     ```
 
-2. The program will ask for a Spotify URL. Paste any Spotify URL (can be an album, playlist, or track).
+2. Follow the prompts:
+    - **Spotify URL**: Paste any Spotify URL (can be an album, playlist, or track).
+    - **Concurrent Searches**: Enter the number of concurrent searches. (Note: Setting this number too high may cause your PC to crash.)
+    - **Concurrent Downloads**: Enter the number of concurrent downloads. (Note: Setting this number too high may cause your PC to crash.)
+    - **Output Folder**: Choose the destination folder for the downloaded tracks.
+
+3. The program will start downloading the tracks.
 
 ## Disclaimer
 Downloads might not work due to YouTube and Spotify updates. In this case, open an issue and I'll fix it.

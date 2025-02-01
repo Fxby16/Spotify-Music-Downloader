@@ -2,56 +2,75 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import sys
 import yt_dlp
-import time
-import threading
 import concurrent.futures
 import aiotube
+from multiprocessing import Pool
 
 PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
 
-CLIENT_ID = 'YOUR CLIENT ID'
-CLIENT_SECRET = 'YOUR CLIENT SECRET'
+MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
+assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input" # Ensure input is a number
+MAX_CONCURRENT_SEARCHES = int(MAX_CONCURRENT_SEARCHES)
 
-CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
-SP = spotipy.Spotify(client_credentials_manager=CLIENT_CREDENTIALS_MANAGER)
+MAX_CONCURRENT_DOWNLOADS = input("Max concurrent downloads: ")
+assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input" # Ensure input is a number
+MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
+
+# Spotify API credentials
+CLIENT_ID = 'YOUR_CLIENT_ID'
+CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
+
+# Spotify client
+CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
+SP = spotipy.Spotify(client_credentials_manager = CLIENT_CREDENTIALS_MANAGER)
 
 def get_playlist_uri(playlist_link):
     return playlist_link.split("/")[-1].split("?")[0]
 
-def download_worker(lock, url, folder, track):
-    with lock:
-        download(url, folder, track)
+def download_worker(args):
+    url, folder, track = args
+    print("Starting download worker to download", track)
+    download(url, folder, track)
 
-def search_youtube(track, folder, lock, threads):
+def search_youtube(track, folder):
     try:
         video = aiotube.Search.video(track)
-        url = video.metadata.get('url')
+
+        if video is None:
+            print(f"Search returned no result for {track}")
+            return None  
+
+        url = video._url
 
         if url:
-            download_thread = threading.Thread(target=download_worker, args=(lock, url, folder, track))
-            download_thread.start()
-            threads.append(download_thread)
+            return url, folder, track  
 
     except Exception as e:
         print(f"Search failed for {track}: {e}")
 
-def fetch_youtube_links(tracks, folder, lock):
-    futures = []
-    threads = []
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for track in tracks:
-            future = executor.submit(search_youtube, track, folder, lock, threads)
-            futures.append(future)
+    return None  
 
-    print("Waiting for all searches to finish...")
-    concurrent.futures.wait(futures)
-    print("All searches finished")
 
-    print("Waiting for all downloads to finish...")
-    for thread in threads:
-        thread.join()
-    print("All downloads finished")
+def fetch_and_download(tracks, folder):
+    download_tasks = []
+
+    print("Searching YouTube for tracks...")
+
+    # Search for YouTube links concurrently (up to MAX_CONCURRENT_SEARCHES at a time)
+    with concurrent.futures.ThreadPoolExecutor(max_workers = MAX_CONCURRENT_SEARCHES) as executor:
+        futures = {executor.submit(search_youtube, track, folder): track for track in tracks}
         
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
+                download_tasks.append(result)  # Add valid searches to the task list
+
+    print(f"Found {len(download_tasks)} valid YouTube links. Starting downloads...")
+
+    # Download tracks concurrently (up to MAX_CONCURRENT_DOWNLOADS at a time). 
+    # Done in separate process due to yt_dlp not being thread-safe.
+    with Pool(processes = MAX_CONCURRENT_DOWNLOADS) as pool:
+        pool.map(download_worker, download_tasks)
 
 def playlist():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
@@ -61,11 +80,13 @@ def playlist():
 
     results = SP.playlist_tracks(playlist_uri)
     
+    # Extract track names in format "track_name - artist1, artist2, ..."
     tracks = [
         track['track']['name'] + ' - ' + ', '.join(artist['name'] for artist in track['track']['artists'])
         for track in results['items']
     ]
 
+    # Fetch other pages of tracks and add them to the list
     while results['next']:
         results = SP.next(results)
         tracks.extend(
@@ -75,8 +96,7 @@ def playlist():
 
     print(f"Playlist has {len(tracks)} tracks")
     
-    lock = threading.Lock()
-    fetch_youtube_links(tracks, folder, lock)
+    fetch_and_download(tracks, folder) # Fetch YouTube links and download tracks
     
     return folder
 
@@ -86,12 +106,14 @@ def album():
 
     print('Fetching album tracks...')
 
+    # Extract track names in format "track_name - artist1, artist2, ..."
     results = SP.album_tracks(playlist_uri)
     tracks = [
         track['name'] + ' - ' + ', '.join(artist['name'] for artist in track['artists'])
         for track in results['items']
     ]
 
+    # Fetch other pages of tracks and add them to the list
     while results['next']:
         results = SP.next(results)
         tracks.extend(
@@ -101,8 +123,7 @@ def album():
 
     print(f'Album has {len(tracks)} tracks')
 
-    lock = threading.Lock()
-    fetch_youtube_links(tracks, folder, lock)
+    fetch_and_download(tracks, folder) # Fetch YouTube links and download tracks
 
     return folder
 
@@ -112,24 +133,24 @@ def track():
 
     print('Fetching track...')
 
+    # Extract track name in format "track_name - artist1, artist2, ..."
     results = SP.track(playlist_uri)
     track = results['name'] + ' - ' + ', '.join(artist['name'] for artist in results['artists'])
     
+    # Directly search and download the track since there is only one
     video = aiotube.Search.video(track)
-    url = video.metadata.get('url')
+    url = video._url
 
     download(url, folder ,track)
 
     return folder
 
 def download(link, folder, track):
-    start = time.time()
-    
     ydl_opts = {
         'format': 'bestaudio',
         'extractaudio': True,
         'outtmpl': f'{folder}/{track}.%(ext)s',
-        'quiet': False,
+        'quiet': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -139,9 +160,6 @@ def download(link, folder, track):
 
     with yt_dlp.YoutubeDL(ydl_opts) as yt:
         yt.download([link])
-    
-    end = time.time()
-    print(f"Download of {track} took {end - start} seconds")
 
 def main():
     if PLAYLIST_LINK == '0':
@@ -156,4 +174,5 @@ def main():
     else:
         print('Invalid link')
 
-main()
+if __name__ == '__main__':
+    main()
