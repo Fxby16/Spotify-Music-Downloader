@@ -4,9 +4,15 @@ import sys
 import yt_dlp
 import concurrent.futures
 from multiprocessing import Pool
+from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3, APIC
+import requests
 from youtube import search_video
 
 PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
+
+MAX_CONCURRENT_SEARCHES = 1
+MAX_CONCURRENT_DOWNLOADS = 1
 
 if '/track/' not in PLAYLIST_LINK:
     MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
@@ -30,29 +36,26 @@ def get_playlist_uri(playlist_link):
 
 def download_worker(args):
     url, folder, track = args
-    print("Starting download worker to download", track)
+    print("Starting download worker to download", track['title'] + " - " + track['artists'])
     download(url, folder, track)
 
 def search_youtube(track, folder):
+    title_to_search = f"{track['title']} - {track['artists']}"
     try:
-        url = search_video(track)
+        url = search_video(title_to_search)
 
         if url is None:
-            print(f"Search returned no result for {track}")
+            print(f"Search returned no result for {title_to_search}")
             return None  
 
         return url, folder, track  
 
     except Exception as e:
-        print(f"Search failed for {track}: {e}")
+        print(f"Search failed for {title_to_search}: {e}")
 
     return None  
 
-import time
-
 def fetch_and_download(tracks, folder):
-    start_time = time.time()
-
     download_tasks = []
 
     print("Searching YouTube for tracks...")
@@ -68,8 +71,6 @@ def fetch_and_download(tracks, folder):
 
     print(f"Found {len(download_tasks)} valid YouTube links. Starting downloads...")
 
-    print("Search took", time.time() - start_time, "seconds")
-
     # Download tracks concurrently (up to MAX_CONCURRENT_DOWNLOADS at a time). 
     # Done in separate process due to yt_dlp not being thread-safe.
     with Pool(processes = MAX_CONCURRENT_DOWNLOADS) as pool:
@@ -81,24 +82,45 @@ def playlist():
     
     print("Fetching playlist tracks...")
 
+    # Extract track information from the playlist
     results = SP.playlist_tracks(playlist_uri)
     
-    # Extract track names in format "track_name - artist1, artist2, ..."
-    tracks = [
-        track['track']['name'] + ' - ' + ', '.join(artist['name'] for artist in track['track']['artists'])
-        for track in results['items']
-    ]
+    tracks = []
+    for track in results['items']:
+        track_info = track['track']
+        track_name = track_info['name']
+        artists = ', '.join(artist['name'] for artist in track_info['artists'])
+        album = track_info['album']['name']
+        thumbnail_url = track_info['album']['images'][0]['url'] if track_info['album']['images'] else None
+
+        tracks.append({
+            "title": track_name,
+            "artists": artists,
+            "album": album,
+            "thumbnail": thumbnail_url
+        })
 
     # Fetch other pages of tracks and add them to the list
     while results['next']:
         results = SP.next(results)
-        tracks.extend(
-            track['track']['name'] + ' - ' + ', '.join(artist['name'] for artist in track['track']['artists'])
-            for track in results['items']
-        )
+        
+        for track in results['items']:
+            track_info = track['track']
+            track_name = track_info['name']
+            artists = ', '.join(artist['name'] for artist in track_info['artists'])
+            album = track_info['album']['name']
+            thumbnail_url = track_info['album']['images'][0]['url'] if track_info['album']['images'] else None
+
+            tracks.append({
+                "title": track_name,
+                "artists": artists,
+                "album": album,
+                "thumbnail": thumbnail_url
+            })
 
     print(f"Playlist has {len(tracks)} tracks")
 
+    global MAX_CONCURRENT_SEARCHES, MAX_CONCURRENT_DOWNLOADS
     MAX_CONCURRENT_SEARCHES = min(MAX_CONCURRENT_SEARCHES, len(tracks)) # Limit searches to the number of tracks
     MAX_CONCURRENT_DOWNLOADS = min(MAX_CONCURRENT_DOWNLOADS, len(tracks)) # Limit downloads to the number of tracks
     
@@ -110,25 +132,46 @@ def album():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
     folder = input('Destination folder: ')
 
+    print('Fetching album details...')
+    album_data = SP.album(playlist_uri)  # Fetch album metadata
+
+    album_name = album_data['name']
+    thumbnail_url = album_data['images'][0]['url'] if album_data['images'] else None
+
     print('Fetching album tracks...')
 
-    # Extract track names in format "track_name - artist1, artist2, ..."
+    # Extract track information from the album
     results = SP.album_tracks(playlist_uri)
-    tracks = [
-        track['name'] + ' - ' + ', '.join(artist['name'] for artist in track['artists'])
-        for track in results['items']
-    ]
+    
+    tracks = []
+    for track in results['items']:
+        track_name = track['name']
+        artists = ', '.join(artist['name'] for artist in track['artists'])
+
+        tracks.append({
+            "title": track_name,
+            "artists": artists,
+            "album": album_name,
+            "thumbnail": thumbnail_url
+        })
 
     # Fetch other pages of tracks and add them to the list
     while results['next']:
         results = SP.next(results)
-        tracks.extend(
-            track['name'] + ' - ' + ', '.join(artist['name'] for artist in track['artists'])
-            for track in results['items']
-        )
+        for track in results['items']:
+            track_name = track['name']
+            artists = ', '.join(artist['name'] for artist in track['artists'])
 
-    print(f'Album has {len(tracks)} tracks')
+            tracks.append({
+                "title": track_name,
+                "artists": artists,
+                "album": album_name,
+                "thumbnail": thumbnail_url
+            })
 
+    print(f'Album "{album_name}" has {len(tracks)} tracks')
+
+    global MAX_CONCURRENT_SEARCHES, MAX_CONCURRENT_DOWNLOADS
     MAX_CONCURRENT_SEARCHES = min(MAX_CONCURRENT_SEARCHES, len(tracks)) # Limit searches to the number of tracks
     MAX_CONCURRENT_DOWNLOADS = min(MAX_CONCURRENT_DOWNLOADS, len(tracks)) # Limit downloads to the number of tracks
 
@@ -144,10 +187,17 @@ def track():
 
     # Extract track name in format "track_name - artist1, artist2, ..."
     results = SP.track(playlist_uri)
-    track = results['name'] + ' - ' + ', '.join(artist['name'] for artist in results['artists'])
-    
+    track = { 
+        "title": results['name'],
+        "artists": ', '.join(artist['name'] for artist in results['artists']),
+        "album": results['album']['name'],
+        "thumbnail": results['album']['images'][0]['url'] if results['album']['images'] else None
+    }
+
     # Directly search and download the track since there is only one
-    url = search_video(track)
+    url = search_video(f"{track['title']} - {track['artists']}")
+
+    print(f'Starting download for {track["title"]} - {track["artists"]}')
 
     download(url, folder ,track)
 
@@ -157,7 +207,7 @@ def download(link, folder, track):
     ydl_opts = {
         'format': 'bestaudio',
         'extractaudio': True,
-        'outtmpl': f'{folder}/{track}.%(ext)s',
+        'outtmpl': f'{folder}/{track['title']}.%(ext)s',
         'quiet': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -166,8 +216,36 @@ def download(link, folder, track):
         }],
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as yt:
-        yt.download([link])
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as yt:
+            yt.download([link])
+    except Exception as e:
+        print(f"Download failed for {track['title']}")
+        return
+
+    mp3_file = f'{folder}/{track['title']}.mp3'
+    audio = EasyID3(mp3_file)
+
+    # Add metadata to the downloaded track
+    audio['title'] = track['title']
+    audio['artist'] = track['artists']
+    audio['album'] = track['album']
+    audio.save()
+
+    # Get the thumbnail and add it to the track
+    if track['thumbnail']:
+        response = requests.get(track['thumbnail'])
+        if response.status_code == 200:
+            image_data = response.content
+            audio = ID3(mp3_file)
+            audio.add(APIC(
+                encoding = 3,  # UTF-8
+                mime = 'image/jpeg',  # Image format
+                type = 3,  # Front cover
+                desc = 'Cover',
+                data = image_data
+            ))
+            audio.save()
 
 def main():
     if PLAYLIST_LINK == '0':
