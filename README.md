@@ -7,6 +7,7 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
 - `spotipy`
 - `yt_dlp`
 - `ffmpeg`
+- `mutagen`
 - Spotify developer credentials (you can get them at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard))
 
 ## Installation
