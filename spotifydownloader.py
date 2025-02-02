@@ -3,18 +3,19 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import sys
 import yt_dlp
 import concurrent.futures
-import aiotube
 from multiprocessing import Pool
+from youtube import search_video
 
 PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
 
-MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
-assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input" # Ensure input is a number
-MAX_CONCURRENT_SEARCHES = int(MAX_CONCURRENT_SEARCHES)
+if '/track/' not in PLAYLIST_LINK:
+    MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
+    assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input" # Ensure input is a number
+    MAX_CONCURRENT_SEARCHES = int(MAX_CONCURRENT_SEARCHES)
 
-MAX_CONCURRENT_DOWNLOADS = input("Max concurrent downloads: ")
-assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input" # Ensure input is a number
-MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
+    MAX_CONCURRENT_DOWNLOADS = input("Max concurrent downloads: ")
+    assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input" # Ensure input is a number
+    MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
 # Spotify API credentials
 CLIENT_ID = 'YOUR_CLIENT_ID'
@@ -34,24 +35,24 @@ def download_worker(args):
 
 def search_youtube(track, folder):
     try:
-        video = aiotube.Search.video(track)
+        url = search_video(track)
 
-        if video is None:
+        if url is None:
             print(f"Search returned no result for {track}")
             return None  
 
-        url = video._url
-
-        if url:
-            return url, folder, track  
+        return url, folder, track  
 
     except Exception as e:
         print(f"Search failed for {track}: {e}")
 
     return None  
 
+import time
 
 def fetch_and_download(tracks, folder):
+    start_time = time.time()
+
     download_tasks = []
 
     print("Searching YouTube for tracks...")
@@ -66,6 +67,8 @@ def fetch_and_download(tracks, folder):
                 download_tasks.append(result)  # Add valid searches to the task list
 
     print(f"Found {len(download_tasks)} valid YouTube links. Starting downloads...")
+
+    print("Search took", time.time() - start_time, "seconds")
 
     # Download tracks concurrently (up to MAX_CONCURRENT_DOWNLOADS at a time). 
     # Done in separate process due to yt_dlp not being thread-safe.
@@ -95,6 +98,9 @@ def playlist():
         )
 
     print(f"Playlist has {len(tracks)} tracks")
+
+    MAX_CONCURRENT_SEARCHES = min(MAX_CONCURRENT_SEARCHES, len(tracks)) # Limit searches to the number of tracks
+    MAX_CONCURRENT_DOWNLOADS = min(MAX_CONCURRENT_DOWNLOADS, len(tracks)) # Limit downloads to the number of tracks
     
     fetch_and_download(tracks, folder) # Fetch YouTube links and download tracks
     
@@ -123,6 +129,9 @@ def album():
 
     print(f'Album has {len(tracks)} tracks')
 
+    MAX_CONCURRENT_SEARCHES = min(MAX_CONCURRENT_SEARCHES, len(tracks)) # Limit searches to the number of tracks
+    MAX_CONCURRENT_DOWNLOADS = min(MAX_CONCURRENT_DOWNLOADS, len(tracks)) # Limit downloads to the number of tracks
+
     fetch_and_download(tracks, folder) # Fetch YouTube links and download tracks
 
     return folder
@@ -138,8 +147,7 @@ def track():
     track = results['name'] + ' - ' + ', '.join(artist['name'] for artist in results['artists'])
     
     # Directly search and download the track since there is only one
-    video = aiotube.Search.video(track)
-    url = video._url
+    url = search_video(track)
 
     download(url, folder ,track)
 

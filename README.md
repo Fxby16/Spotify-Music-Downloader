@@ -6,7 +6,6 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
 ## Requirements
 - `spotipy`
 - `yt_dlp`
-- `aiotube`
 - `ffmpeg`
 - Spotify developer credentials (you can get them at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard))
 
@@ -27,8 +26,8 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
 
 2. Follow the prompts:
     - **Spotify URL**: Paste any Spotify URL (can be an album, playlist, or track).
-    - **Concurrent Searches**: Enter the number of concurrent searches. (Note: Setting this number too high may cause your PC to crash.)
-    - **Concurrent Downloads**: Enter the number of concurrent downloads. (Note: Setting this number too high may cause your PC to crash.)
+    - **Concurrent Searches**: If the URL doesn't represent a track, enter the number of concurrent searches. (Note: Setting this number too high may cause your PC to crash.)
+    - **Concurrent Downloads**: If the URL doesn't represent a track, enter the number of concurrent downloads. (Note: Setting this number too high may cause your PC to crash.)
     - **Output Folder**: Choose the destination folder for the downloaded tracks.
 
 3. The program will start downloading the tracks.
