@@ -8,6 +8,7 @@ from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3, APIC
 import requests
 from youtube import search_video
+import os
 
 PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
 
@@ -24,8 +25,8 @@ if '/track/' not in PLAYLIST_LINK:
     MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
 # Spotify API credentials
-CLIENT_ID = 'YOUR_CLIENT_ID'
-CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
+CLIENT_ID = 'YOUR CLIENT ID'
+CLIENT_SECRET = 'YOUR CLIENT SECRET'
 
 # Spotify client
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
@@ -41,6 +42,11 @@ def download_worker(args):
 
 def search_youtube(track, folder):
     title_to_search = f"{track['title']} - {track['artists']}"
+
+    if os.path.exists(f"{folder}/{title_to_search}.mp3"):
+        print(f"Track {title_to_search} already exists in {folder}. Skipping download.")
+        return None
+
     try:
         url = search_video(title_to_search)
 
@@ -194,12 +200,17 @@ def track():
         "thumbnail": results['album']['images'][0]['url'] if results['album']['images'] else None
     }
 
+    title_to_search = f"{track['title']} - {track['artists']}"
+
     # Directly search and download the track since there is only one
-    url = search_video(f"{track['title']} - {track['artists']}")
+    url = search_video(title_to_search)
 
-    print(f'Starting download for {track["title"]} - {track["artists"]}')
+    print(f'Starting download for {title_to_search}')
 
-    download(url, folder ,track)
+    if os.path.exists(f"{folder}/{title_to_search}.mp3"):
+        print(f"Track {title_to_search} already exists in {folder}. Skipping download.")
+    else:
+        download(url, folder ,track)
 
     return folder
 
@@ -207,7 +218,7 @@ def download(link, folder, track):
     ydl_opts = {
         'format': 'bestaudio',
         'extractaudio': True,
-        'outtmpl': f'{folder}/{track['title']}.%(ext)s',
+        'outtmpl': f'{folder}/{track['title']} - {track['artists']}.%(ext)s',
         'quiet': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -220,10 +231,10 @@ def download(link, folder, track):
         with yt_dlp.YoutubeDL(ydl_opts) as yt:
             yt.download([link])
     except Exception as e:
-        print(f"Download failed for {track['title']}")
+        print(f"Download failed for {track['title']} - {track['artists']}: {e}")
         return
 
-    mp3_file = f'{folder}/{track['title']}.mp3'
+    mp3_file = f'{folder}/{track['title']} - {track['artists']}.mp3'
     audio = EasyID3(mp3_file)
 
     # Add metadata to the downloaded track

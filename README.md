@@ -13,7 +13,7 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
 ## Installation
 1. Install the required packages.
 
-2. Replace lines 21-22 in [spotifydownloader.py](./spotifydownloader.py) with your Spotify developer credentials:
+2. Replace lines 28-29 in [spotifydownloader.py](./spotifydownloader.py) with your Spotify developer credentials:
     ```python
     CLIENT_ID = 'YOUR CLIENT ID'
     CLIENT_SECRET = 'YOUR CLIENT SECRET'
