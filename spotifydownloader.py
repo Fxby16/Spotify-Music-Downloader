@@ -48,7 +48,7 @@ def search_youtube(track, folder):
         return None
 
     try:
-        url = search_video(title_to_search)
+        url = search_video(track)
 
         if url is None:
             print(f"Search returned no result for {title_to_search}")
