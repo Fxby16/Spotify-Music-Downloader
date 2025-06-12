@@ -25,8 +25,8 @@ if '/track/' not in PLAYLIST_LINK:
     MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
 # Spotify API credentials
-CLIENT_ID = 'YOUR CLIENT ID'
-CLIENT_SECRET = 'YOUR CLIENT SECRET'
+CLIENT_ID = 'YOUR_CLIENT_ID'
+CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
 
 # Spotify client
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
@@ -203,7 +203,7 @@ def track():
     title_to_search = f"{track['title']} - {track['artists']}"
 
     # Directly search and download the track since there is only one
-    url = search_video(title_to_search)
+    url = search_video(track)
 
     print(f'Starting download for {title_to_search}')
 
@@ -214,11 +214,18 @@ def track():
 
     return folder
 
+def sanitize_filename(filename):
+    invalid_chars = r'<>:"/\|?*'
+    for char in invalid_chars:
+        filename = filename.replace(char, '')
+    return filename.strip() 
+
 def download(link, folder, track):
+    filename = sanitize_filename(f"{track['title']} - {track['artists']}")
     ydl_opts = {
         'format': 'bestaudio',
         'extractaudio': True,
-        'outtmpl': f'{folder}/{track['title']} - {track['artists']}.%(ext)s',
+        'outtmpl': f'{folder}/{filename}.%(ext)s',
         'quiet': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
@@ -234,7 +241,7 @@ def download(link, folder, track):
         print(f"Download failed for {track['title']} - {track['artists']}: {e}")
         return
 
-    mp3_file = f'{folder}/{track['title']} - {track['artists']}.mp3'
+    mp3_file = f'{folder}/{filename}.mp3'
     audio = EasyID3(mp3_file)
 
     # Add metadata to the downloaded track
