@@ -21,4 +21,7 @@ def search_video(track):
             out = song
             break
 
+    print("Found:", out["title"], "by", ", ".join(artist["name"] for artist in out["artists"]))
+    print("Expected:", track["title"], "by", track["artists"])
+
     return f"https://music.youtube.com/watch?v={out['videoId']}"

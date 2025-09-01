@@ -25,8 +25,8 @@ if '/track/' not in PLAYLIST_LINK:
     MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
 # Spotify API credentials
-CLIENT_ID = 'YOUR_CLIENT_ID'
-CLIENT_SECRET = 'YOUR_CLIENT_SECRET'
+CLIENT_ID = 'ed9fa7b0a4e94db28e584d797b1d35aa'
+CLIENT_SECRET = '193d017ff6ad482fb6aeed1e72960577'
 
 # Spotify client
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
@@ -223,16 +223,16 @@ def sanitize_filename(filename):
 def download(link, folder, track):
     filename = sanitize_filename(f"{track['title']} - {track['artists']}")
     ydl_opts = {
-        'format': 'bestaudio',
-        'extractaudio': True,
+        'format': 'bestaudio/best',
         'outtmpl': f'{folder}/{filename}.%(ext)s',
         'quiet': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192'
+            'preferredquality': '192',
         }],
     }
+
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as yt:
