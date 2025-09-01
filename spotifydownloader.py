@@ -25,8 +25,8 @@ if '/track/' not in PLAYLIST_LINK:
     MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
 # Spotify API credentials
-CLIENT_ID = 'ed9fa7b0a4e94db28e584d797b1d35aa'
-CLIENT_SECRET = '193d017ff6ad482fb6aeed1e72960577'
+CLIENT_ID = 'YOUR CLIENT ID'
+CLIENT_SECRET = 'YOUR CLIENT SECRET'
 
 # Spotify client
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
