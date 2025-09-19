@@ -4,11 +4,7 @@
 Spotify Music Downloader allows you to download tracks, albums, and playlists from Spotify by fetching the corresponding YouTube links and downloading the audio.
 
 ## Requirements
-- `spotipy`
-- `yt_dlp`
-- `ffmpeg`
-- `mutagen`
-- `ytmusicapi`
+- `pip install -r requirements.txt`
 - Spotify developer credentials (you can get them at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard))
 
 ## Installation
