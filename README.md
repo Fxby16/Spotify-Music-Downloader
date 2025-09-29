@@ -17,6 +17,12 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
     CLIENT_SECRET = 'YOUR CLIENT SECRET'
     ```
 
+3. Replace lines 3-4 in [youtube.py](./youtube.py) with your preferred language and location:
+    ```python
+    language = "it"
+    location = "IT"
+    ```
+
 ## Usage
 1. Run the script:
     ```sh
