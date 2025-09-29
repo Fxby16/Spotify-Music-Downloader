@@ -5,8 +5,6 @@ location = "IT"
 ytmusic = YTMusic(language=language, location=location)
 
 def common_words(youtube_title, spotify_title):
-    """Check if YouTube title contains enough words from Spotify title"""
-    
     youtube_words = set(word.lower().strip() for word in youtube_title.split() if len(word) > 2)
     spotify_words = set(word.lower().strip() for word in spotify_title.split() if len(word) > 2)
     
