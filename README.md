@@ -6,6 +6,7 @@ Spotify Music Downloader allows you to download tracks, albums, and playlists fr
 ## Requirements
 - `pip install -r requirements.txt`
 - Spotify developer credentials (you can get them at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard))
+- [OPTIONAL] Export Youtube cookies and save them as `www.youtube.com_cookies.txt`
 
 ## Installation
 1. Install the required packages.

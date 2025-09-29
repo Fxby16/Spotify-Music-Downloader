@@ -10,23 +10,14 @@ import requests
 from youtube import search_video
 import os
 
-PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
+PLAYLIST_LINK = "0"
 
 MAX_CONCURRENT_SEARCHES = 1
 MAX_CONCURRENT_DOWNLOADS = 1
 
-if '/track/' not in PLAYLIST_LINK:
-    MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
-    assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input" # Ensure input is a number
-    MAX_CONCURRENT_SEARCHES = int(MAX_CONCURRENT_SEARCHES)
-
-    MAX_CONCURRENT_DOWNLOADS = input("Max concurrent downloads: ")
-    assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input" # Ensure input is a number
-    MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
-
 # Spotify API credentials
-CLIENT_ID = 'YOUR CLIENT ID'
-CLIENT_SECRET = 'YOUR CLIENT SECRET'
+CLIENT_ID = 'your_spotify_client_id'
+CLIENT_SECRET = 'your_spotify_client_secret'
 
 # Spotify client
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
@@ -222,6 +213,12 @@ def sanitize_filename(filename):
 
 def download(link, folder, track):
     filename = sanitize_filename(f"{track['title']} - {track['artists']}")
+    path = os.path.join(folder, filename)
+
+    if os.path.exists(path):
+        print(f"File exists: {path}")
+        return 
+
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{folder}/{filename}.%(ext)s',
@@ -231,8 +228,8 @@ def download(link, folder, track):
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
+        # 'cookiefile': 'www.youtube.com_cookies.txt'
     }
-
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as yt:
@@ -266,8 +263,21 @@ def download(link, folder, track):
             audio.save()
 
 def main():
+    global PLAYLIST_LINK
+    PLAYLIST_LINK = input('Insert Playlist/Album/Track link to continue or 0 to ESC: ')
+
     if PLAYLIST_LINK == '0':
         sys.exit()
+
+    global MAX_CONCURRENT_SEARCHES, MAX_CONCURRENT_DOWNLOADS
+    if '/track/' not in PLAYLIST_LINK:
+        MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
+        assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input" # Ensure input is a number
+        MAX_CONCURRENT_SEARCHES = int(MAX_CONCURRENT_SEARCHES)
+
+        MAX_CONCURRENT_DOWNLOADS = input("Max concurrent downloads: ")
+        assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input" # Ensure input is a number
+        MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
     if '/playlist/' in PLAYLIST_LINK:
         playlist()
