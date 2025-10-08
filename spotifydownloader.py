@@ -272,11 +272,11 @@ def main():
     global MAX_CONCURRENT_SEARCHES, MAX_CONCURRENT_DOWNLOADS
     if '/track/' not in PLAYLIST_LINK:
         MAX_CONCURRENT_SEARCHES = input("Max concurrent searches: ")
-        assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input" # Ensure input is a number
+        assert MAX_CONCURRENT_SEARCHES.isdigit(), "Invalid input"
         MAX_CONCURRENT_SEARCHES = int(MAX_CONCURRENT_SEARCHES)
 
         MAX_CONCURRENT_DOWNLOADS = input("Max concurrent downloads: ")
-        assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input" # Ensure input is a number
+        assert MAX_CONCURRENT_DOWNLOADS.isdigit(), "Invalid input"
         MAX_CONCURRENT_DOWNLOADS = int(MAX_CONCURRENT_DOWNLOADS)
 
     if '/playlist/' in PLAYLIST_LINK:

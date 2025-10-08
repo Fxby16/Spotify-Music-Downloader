@@ -22,14 +22,16 @@ def search_video(track):
     res = ytmusic.search(track["title"] + " " + track["artists"], "songs", None, 5)
     res2 = ytmusic.search(track["title"] + " " + track["artists"], "videos", None, 5)
 
-    #print(res)
+    for r in res: 
+        indices = [i for i, x in enumerate(res) if x["title"] == r["title"]]
+        if len(indices) > 1 and r["isExplicit"] == False:
+            res.remove(r)
+
     out = res[0]
 
     skip_check = False
     for song in res:
         artist_names = ", ".join(artist["name"] for artist in song["artists"])
-        #print("Title:", song["title"], "Artists:", artist_names)
-        #print(track["artists"])
 
         song_artists_set = set(a.strip().lower() for a in artist_names.split(","))
         track_artists_set = set(a.strip().lower() for a in track["artists"].split(","))
@@ -38,7 +40,6 @@ def search_video(track):
             song["title"].lower() == track["title"].lower()
             and song_artists_set == track_artists_set
         ):
-            #print(song)
             out = song
             skip_check = True
             break
