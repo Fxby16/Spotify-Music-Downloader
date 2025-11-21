@@ -16,10 +16,9 @@ MAX_CONCURRENT_SEARCHES = 1
 MAX_CONCURRENT_DOWNLOADS = 1
 
 # Spotify API credentials
-CLIENT_ID = 'your_spotify_client_id'
-CLIENT_SECRET = 'your_spotify_client_secret'
+CLIENT_ID = 'your_client_id'
+CLIENT_SECRET = 'your_client_secret'
 
-# Spotify client
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
 SP = spotipy.Spotify(client_credentials_manager = CLIENT_CREDENTIALS_MANAGER)
 
@@ -75,7 +74,9 @@ def fetch_and_download(tracks, folder):
 
 def playlist():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
-    folder = input("Destination folder: ")
+    folder = ""
+    while not folder.strip():
+        folder = input("Destination folder: ")
     
     print("Fetching playlist tracks...")
 
@@ -127,7 +128,9 @@ def playlist():
 
 def album():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
-    folder = input('Destination folder: ')
+    folder = ""
+    while not folder.strip():
+        folder = input("Destination folder: ")
 
     print('Fetching album details...')
     album_data = SP.album(playlist_uri)  # Fetch album metadata
@@ -178,7 +181,9 @@ def album():
 
 def track():
     playlist_uri = get_playlist_uri(PLAYLIST_LINK)
-    folder = input('Destination folder: ')
+    folder = ""
+    while not folder.strip():
+        folder = input("Destination folder: ")
 
     print('Fetching track...')
 
