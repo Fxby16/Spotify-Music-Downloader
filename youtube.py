@@ -22,20 +22,20 @@ def search_video(track):
     res = ytmusic.search(track["title"] + " " + track["artists"], "songs", None, 5)
     res2 = ytmusic.search(track["title"] + " " + track["artists"], "videos", None, 5)
 
-    for r in res:
-        print(r["title"], r["videoId"], r["artists"])
+    # for r in res:
+    #     print(r["title"], r["videoId"], r["artists"])
 
     for r in res: 
         indices = [i for i, x in enumerate(res) if x["isExplicit"] and (r["title"] == x["title"]) and (r["artists"] == x["artists"])]
         if len(indices) > 0 and r["isExplicit"] == False:
-            print("Removing duplicate non-explicit:", r["title"], "with id", r["videoId"], "by", ", ".join(artist["name"] for artist in r["artists"]))
+            # print("Removing duplicate non-explicit:", r["title"], "with id", r["videoId"], "by", ", ".join(artist["name"] for artist in r["artists"]))
             res.remove(r)
 
     out = res[0]
 
     skip_check = False
     for song in res:
-        print("Checking:", song["title"], "by", ", ".join(artist["name"] for artist in song["artists"]))
+        # print("Checking:", song["title"], "by", ", ".join(artist["name"] for artist in song["artists"]))
         artist_names = ", ".join(artist["name"] for artist in song["artists"])
 
         song_artists_set = set(a.strip().lower() for a in artist_names.split(","))
@@ -50,7 +50,7 @@ def search_video(track):
             break
 
     if not skip_check and not has_common_words(out["title"], track["title"], 1) and common_words(out["title"], track["title"]) < common_words(res2[0]["title"], track["title"]):
-        print(out["title"], out["artists"], "----", res2[0]["title"])
+        # print(out["title"], out["artists"], "----", res2[0]["title"])
         out = res2[0] 
 
     print("Found:", out["title"], "with id", out["videoId"], "by", ", ".join(artist["name"] for artist in out["artists"]))
