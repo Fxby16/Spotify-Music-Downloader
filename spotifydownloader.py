@@ -7,7 +7,7 @@ from multiprocessing import Pool
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3, APIC
 import requests
-from youtube import search_video
+from youtube import search_video, location, language
 import os
 
 PLAYLIST_LINK = "0"
@@ -16,11 +16,23 @@ MAX_CONCURRENT_SEARCHES = 1
 MAX_CONCURRENT_DOWNLOADS = 1
 
 # Spotify API credentials
-CLIENT_ID = 'your_client_id'
-CLIENT_SECRET = 'your_client_secret'
+CLIENT_ID = 'your_spotify_client_id'
+CLIENT_SECRET = 'your_spotify_client_secret'
 
 CLIENT_CREDENTIALS_MANAGER = SpotifyClientCredentials(client_id = CLIENT_ID, client_secret = CLIENT_SECRET)
 SP = spotipy.Spotify(client_credentials_manager = CLIENT_CREDENTIALS_MANAGER)
+
+def set_location_language(id):
+    global location, language
+    if id == 0:
+        location = "US"
+        language = "en"
+    if id == 1:
+        location = "IT"
+        language = "it"
+    else:
+        location = "US"
+        language = "en"
 
 def get_playlist_uri(playlist_link):
     return playlist_link.split("/")[-1].split("?")[0]
@@ -273,6 +285,12 @@ def main():
 
     if PLAYLIST_LINK == '0':
         sys.exit()
+
+    location_id = input("Select location/language (0: US/EN, 1: IT/IT): ")
+    while not location_id.isdigit() or int(location_id) not in [0, 1]:
+        location_id = input("Invalid input. Select location/language (0: US/EN, 1: IT/IT): ")
+
+    set_location_language(int(location_id))
 
     global MAX_CONCURRENT_SEARCHES, MAX_CONCURRENT_DOWNLOADS
     if '/track/' not in PLAYLIST_LINK:
